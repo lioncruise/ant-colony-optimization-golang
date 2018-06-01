@@ -75,7 +75,6 @@ func NormolizePodArray() {
 
 func resetAvailableNodeArray() {
 	copy(availableNodeArray, nodeArray)
-	unscheduledPods = make(map[int]int) // 重置未调度的pod的数组
 }
 
 func initPheromoneMatrix() {
@@ -178,8 +177,10 @@ func acaSearch() {
 
 		for antCount := 0; antCount < antNum; antCount++ {
 			resetAvailableNodeArray() // 重置可用资源数组
-			pathOneAnt := make([]int, podNum)
+			pathOneAnt := make([]int, podNum) // 重置当前蚂蚁的路径
+			unscheduledPods = make(map[int]int) // 重置未调度的pod的数组
 
+			hasPodUnscheduled := false
 			for podCount := 0; podCount < podNum; podCount++ {
 				nodeCount := assignOnePod(antCount, podCount)
 				if nodeCount >= 0 {
@@ -189,24 +190,27 @@ func acaSearch() {
 					node.Mem = node.Mem - podArray[podCount].Mem
 				} else {
 					unscheduledPods[podCount] = -1
-					//pathOneAnt[podCount] = -1 // -1表示没有调度该pod
+					pathOneAnt[podCount] = -1 // -1表示没有调度该pod
+					hasPodUnscheduled = true
 				}
 
 			}
 
-			var nodeSet = make(map[int]int)// 使用map实现set
-			for i := 0; i < podNum; i++ {
-				nodeSet[pathOneAnt[i]] = 0
-			}
+			// 如果当前路径中有pod没有调度，不参与比较
+			if hasPodUnscheduled == false {
+				var nodeSet = make(map[int]int)// 使用map实现set
+				for i := 0; i < podNum; i++ {
+					nodeSet[pathOneAnt[i]] = 0
+				}
 
-			if len(nodeSet) < minNodeNum {
-				minNodeNum = len(nodeSet)
-				minPathOneAnt = pathOneAnt // pathOneAnt中如果含有-1的话，不能将其赋值给minPathOneAnt，否则在后面更新信息素可能会数组越界
+				if len(nodeSet) < minNodeNum {
+					minNodeNum = len(nodeSet)
+					minPathOneAnt = pathOneAnt // pathOneAnt中如果含有-1的话，不能将其赋值给minPathOneAnt，否则在后面更新信息素可能会数组越界
+				}
 			}
 		}
 
 		fmt.Println("第", itCount + 1, "轮最小机器数:", minNodeNum)
-		fmt.Println("第", itCount + 1, "轮没有调度的容器:", unscheduledPods)
 
 		updatePheromoneMatrix(minPathOneAnt)
 	}
