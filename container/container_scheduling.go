@@ -65,10 +65,25 @@ func CheckResources() {
 	}
 }
 
+func podResourceSum() (int, int) {
+	podCpuSum := 0
+	podMemSum := 0
+	for i := 0; i < podNum; i++ {
+		podCpuSum += podArray[i].Cpu
+		podMemSum += podArray[i].Mem
+	}
+	return podCpuSum, podMemSum
+}
+
 // 第一次版数据有问题，将容器的CPU、内存除2
 func NormolizePodArray() {
 	for i := 0; i < podNum; i++ {
-		podArray[i].Cpu = podArray[i].Cpu / 2
+		if podArray[i].Cpu == 1 {
+
+		} else {
+			podArray[i].Cpu = podArray[i].Cpu / 2
+		}
+
 		podArray[i].Mem = podArray[i].Mem / 2
 	}
 }
@@ -170,6 +185,7 @@ func updatePheromoneMatrix(minPathOneAnt []int) {
 }
 
 func acaSearch() {
+	podCpuSum, podMemSum := podResourceSum()
 	for itCount := 0; itCount < iteratorNum; itCount++ {
 
 		minNodeNum := 10000
@@ -211,6 +227,23 @@ func acaSearch() {
 		}
 
 		fmt.Println("第", itCount + 1, "轮最小机器数:", minNodeNum)
+
+		// 计算资源利用率
+		costNodeCpuSum := 0
+		costNodeMemSum := 0
+		usedNodeSet := make(map[int]int)
+		for i := 0; i < podNum; i++ {
+			nodeIndex := minPathOneAnt[i]
+			usedNodeSet[nodeIndex] = 1
+		}
+
+		for nodeIndex := range usedNodeSet {
+			costNodeCpuSum += nodeArray[nodeIndex].Cpu
+			costNodeMemSum += nodeArray[nodeIndex].Mem
+		}
+		fmt.Println("第", itCount + 1, "轮最小机器数结果下的CPU利用率:", float64(podCpuSum) / float64(costNodeCpuSum))
+		fmt.Println("第", itCount + 1, "轮最小机器数结果下的内存利用率:", float64(podMemSum) / float64(costNodeMemSum))
+		fmt.Println("======")
 
 		updatePheromoneMatrix(minPathOneAnt)
 	}
